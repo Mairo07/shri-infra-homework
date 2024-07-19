@@ -1,5 +1,5 @@
 name: Lint
-run-name: ${{ github.actor }} is learning GitHub Actions
+run-name: Lint Commit
 on: [push]
 jobs:
   Lint-commit:
