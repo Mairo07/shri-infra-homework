@@ -1,8 +1,8 @@
-name: Lint
-run-name: Lint Commit
+name: CI Pipeline
+run-name: Lint and Test PR
 on: [push]
 jobs:
-  Lint-commit:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -11,6 +11,17 @@ jobs:
           node-version: '20'
       - run: npm install 
       - run: npm run lint
+  
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install 
+      - run: npm run test 
+
 
 
 
