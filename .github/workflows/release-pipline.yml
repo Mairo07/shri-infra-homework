@@ -45,7 +45,7 @@ jobs:
     steps: 
       -uses: actions/checkout@v4 
       -name: Log in Container Registry Yandex
-        run: echo "${{ secrets.CRY_TOKEN}}" | name oauth --password-stdin cr.yandex
+        run: echo "${{ secrets.CRY_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
       -name: Build Docker Image
         run: |
           IMAGE_NAME="cr.yandex/${{ secrets.CRY_ID}}/app:${{ github.run_number }}"
