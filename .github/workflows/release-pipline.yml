@@ -1,70 +1,70 @@
 name: Release Pipeline
 
 on:
-  workflow_dispatch:
+  push:
   
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm install 
-      - run: npm run lint
+  # lint:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '20'
+  #     - run: npm install 
+  #     - run: npm run lint
 
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm install 
-      - run: npm run test
+  # test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '20'
+  #     - run: npm install 
+  #     - run: npm run test
 
-  create-release-branch:
-    needs: [lint, test]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Git
-        run: |
-          git config user.name "${{ github.event.sender.login }}"
-          git config user.email "${{ github.event.sender.login }}@users.noreply.github.com"
-      - name: Create Release Branch
-        run: |
-          BRANCH_NAME="releases/${{ github.run_number }}"
-          git checkout -b $BRANCH_NAME
-          git push origin $BRANCH_NAME
-      - name: Create Tag
-        run: |
-          TAG_NAME="${{ github.run_number }}"
-          git tag $TAG_NAME
-          git push origin $TAG_NAME
+  # create-release-branch:
+  #   needs: [lint, test]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Set up Git
+  #       run: |
+  #         git config user.name "${{ github.event.sender.login }}"
+  #         git config user.email "${{ github.event.sender.login }}@users.noreply.github.com"
+  #     - name: Create Release Branch
+  #       run: |
+  #         BRANCH_NAME="releases/${{ github.run_number }}"
+  #         git checkout -b $BRANCH_NAME
+  #         git push origin $BRANCH_NAME
+  #     - name: Create Tag
+  #       run: |
+  #         TAG_NAME="${{ github.run_number }}"
+  #         git tag $TAG_NAME
+  #         git push origin $TAG_NAME
 
-  build-and-push-docker:
-    needs: create-release-branch
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Log in to Yandex Container Registry
-        run: echo "${{ secrets.CRY_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
-      - name: Build Docker Image
-        run: |
-          IMAGE_NAME="cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.run_number }}"
-          IMAGE_LATEST="cr.yandex/${{ secrets.CRY_ID }}/app:latest"
-          docker build -t $IMAGE_NAME -t $IMAGE_LATEST .
-      - name: Push Docker Image to Container Registry Yandex
-        run: |
-          IMAGE_NAME="cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.run_number }}"
-          IMAGE_LATEST="cr.yandex/${{ secrets.CRY_ID }}/app:latest"
-          docker push $IMAGE_NAME
-          docker push $IMAGE_LATEST
+  # build-and-push-docker:
+  #   needs: create-release-branch
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Log in to Yandex Container Registry
+  #       run: echo "${{ secrets.CRY_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
+  #     - name: Build Docker Image
+  #       run: |
+  #         IMAGE_NAME="cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.run_number }}"
+  #         IMAGE_LATEST="cr.yandex/${{ secrets.CRY_ID }}/app:latest"
+  #         docker build -t $IMAGE_NAME -t $IMAGE_LATEST .
+  #     - name: Push Docker Image to Container Registry Yandex
+  #       run: |
+  #         IMAGE_NAME="cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.run_number }}"
+  #         IMAGE_LATEST="cr.yandex/${{ secrets.CRY_ID }}/app:latest"
+  #         docker push $IMAGE_NAME
+  #         docker push $IMAGE_LATEST
   
   create-release-issue:
-    needs: build-and-push-docker
+    # needs: build-and-push-docker
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -86,13 +86,17 @@ jobs:
           RELEASE_VERSION: ${{ github.run_number }}
           COMMIT_LIST: ${{ steps.commit-list.outputs.commits }}
           DOCKER_IMAGE: cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.run_number }}
+          BODY: |
+            ## Информация о релизе
+            **Дата:** "${RELEASE_DATE}"
+            **Автора релиза:** "${RELEASE_AUTHOR}"
+            **Номер версии:** "${RELEASE_VERSION}"
+            **Список коммитов:**
+            "${COMMIT_LIST}"
+            **Docker-образ:** '["${DOCKER_IMAGE}""](https://"${DOCKER_IMAGE}")
         run: |
-          gh issue create --title "Релиз ${RELEASE_VERSION}" --body "$(
-            echo '## Информация о релизе'
-            echo '**Дата:** '"${RELEASE_DATE}"' '
-            echo '**Автора релиза:** ${RELEASE_AUTHOR}'
-            echo '**Номер версии:** '"${RELEASE_VERSION}"
-            echo $'**Список коммитов:**\n${COMMIT_LIST}'
-            echo '**Docker-образ:** [${DOCKER_IMAGE}](${DOCKER_IMAGE})'
-          )" --assignee $RELEASE_AUTHOR
+          gh issue create \
+            --title "Релиз ${RELEASE_VERSION}" \
+            --body $BODY \
+            --assignee $RELEASE_AUTHOR
 
