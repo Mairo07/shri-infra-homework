@@ -88,7 +88,6 @@ jobs:
           DOCKER_IMAGE: cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.run_number }}
           BODY: |
             ## Информация о релизе
-            **Дата:** "${{ RELEASE_DATE }}"
             **Автора релиза:** "${{ RELEASE_AUTHOR }}"
             **Номер версии:** "${{ RELEASE_VERSION }}"
             **Список коммитов:**
