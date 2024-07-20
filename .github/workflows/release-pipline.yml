@@ -93,6 +93,6 @@ jobs:
             echo '**Автора релиза:** ${RELEASE_AUTHOR}'
             echo '**Номер версии:** '"${RELEASE_VERSION}"
             echo $'**Список коммитов:**\n${COMMIT_LIST}'
-            **Docker-образ:** [${DOCKER_IMAGE}](${DOCKER_IMAGE})
+            echo '**Docker-образ:** [${DOCKER_IMAGE}](${DOCKER_IMAGE})'
           )" --assignee $RELEASE_AUTHOR
 
