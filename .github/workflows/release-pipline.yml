@@ -67,7 +67,7 @@ jobs:
     needs: build-and-push-docker
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout
+      - uses: actions/checkout@v4
       - name: Get Commit List
         id: commit-list
         run: |
