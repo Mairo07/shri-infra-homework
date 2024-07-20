@@ -13,6 +13,7 @@ jobs:
           node-version: '20'
       - run: npm install 
       - run: npm run lint
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -21,7 +22,8 @@ jobs:
         with:
           node-version: '20'
       - run: npm install 
-      - run: npm run test 
+      - run: npm run test
+
   create-release-branch:
     needs: [lint, test]
     runs-on: ubuntu-latest
@@ -41,6 +43,7 @@ jobs:
           TAG_NAME="${{ github.run_number }}"
           git tag $TAG_NAME
           git push origin $TAG_NAME
+
   build-and-push-docker:
     needs: create-release-branch
     runs-on: ubuntu-latest
@@ -59,3 +62,32 @@ jobs:
           IMAGE_LATEST="cr.yandex/${{ secrets.CRY_ID }}/app:latest"
           docker push $IMAGE_NAME
           docker push $IMAGE_LATEST
+  
+  create-release-issue:
+    needs: build-and-push-docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout
+      - name: Get Commit List
+        id: commit-list
+        run: |
+          latest_tag=$(git describe --tags --abbrev=0 HEAD^)
+          echo "::set-output name=commits::$(git log $latest_tag..HEAD --pretty=format:'- %s')"
+      - name: Create Issue
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          RELEASE_DATE: $(date)
+          RELEASE_AUTHOR: ${{ github.event.sender.login }}
+          RELEASE_VERSION: ${{ github.run_number }}
+          COMMIT_LIST: ${{ steps.commit-list.outputs.commits }}
+          DOCKER_IMAGE: cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.run_number }}
+        run: |
+          gh issue create --title "Релиз $RELEASE_VERSION" --body "$(
+            echo '## Информация о релизе\n'
+            echo '**Дата:** $RELEASE_DATE\n'
+            echo '**Автора релиза:** $RELEASE_AUTHOR\n'
+            echo '**Номер версии:** $RELEASE_VERSION\n'
+            echo '**Список коммитов:**\n$COMMIT_LIST\n'
+            echo '**Docker-образ:** [$DOCKER_IMAGE]($DOCKER_IMAGE)\n'
+          )" --assignee $RELEASE_AUTHOR
+
