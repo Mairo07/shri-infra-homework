@@ -27,7 +27,7 @@ jobs:
   create-release-branch:
     needs: [lint, test] 
     runs-on: ubuntu-latest
-    steps: 
+    steps:
       - uses: actions/checkout@v4
       - name: Set up Git
         run: |
