@@ -1,0 +1,56 @@
+name: Release Pipeline
+
+on:
+  workflow_dispatch:
+  
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install 
+      - run: npm run lint
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install 
+      - run: npm run test 
+  create-release-branch:
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Git
+        run: |
+          git config user.name "${{ github.event.sender.login }}"
+          git config user.email "${{ github.event.sender.login }}@users.noreply.github.com"
+      - name: Create Release Branch
+        run: |
+          BRANCH_NAME="releases/${{ github.run_number }}"
+          git checkout -b $BRANCH_NAME
+          git push origin $BRANCH_NAME
+  build-and-push-docker:
+    needs: create-release-branch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to Yandex Container Registry
+        run: echo "${{ secrets.CRY_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
+      - name: Build Docker Image
+        run: |
+          IMAGE_NAME="cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.run_number }}"
+          IMAGE_LATEST="cr.yandex/${{ secrets.CRY_ID }}/app:latest"
+          docker build -t $IMAGE_NAME -t $IMAGE_LATEST .
+      - name: Push Docker Image to Container Registry Yandex
+        run: |
+          IMAGE_NAME="cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.run_number }}"
+          IMAGE_LATEST="cr.yandex/${{ secrets.CRY_ID }}/app:latest"
+          docker push $IMAGE_NAME
+          docker push $IMAGE_LATEST
