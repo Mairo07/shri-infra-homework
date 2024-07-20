@@ -24,9 +24,9 @@ jobs:
       - run: npm install 
       - run: npm run test 
 
-  create-release-branch: 
+  create-release-branch:
+    needs: [lint, test] 
     runs-on: ubuntu-latest
-    needs: [lint, test]
     steps: 
       - uses: actions/checkout@v4
       - name: Set up Git
