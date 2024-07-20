@@ -88,11 +88,12 @@ jobs:
           DOCKER_IMAGE: cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.run_number }}
           BODY: |
             ## Информация о релизе
-            **Автора релиза:** "${{ RELEASE_AUTHOR }}"
-            **Номер версии:** "${{ RELEASE_VERSION }}"
+            # **Дата:** $RELEASE_DATE
+            **Автора релиза:** $RELEASE_AUTHOR
+            **Номер версии:** $RELEASE_VERSION
             **Список коммитов:**
-            "${{ COMMIT_LIST }}"
-            **Docker-образ:** '["${{ DOCKER_IMAGE }}""](https://"${{ DOCKER_IMAGE }}")
+            $COMMIT_LIST
+            **Docker-образ:** [$DOCKER_IMAGE](https://$DOCKER_IMAGE)
         run: |
           gh issue create \
             --title "Релиз ${RELEASE_VERSION}" \
