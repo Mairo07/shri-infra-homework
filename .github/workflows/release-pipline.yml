@@ -27,15 +27,12 @@ jobs:
   create-release-branch: 
     runs-on: ubuntu-latest
     needs: [lint, test]
-
     steps: 
       - uses: actions/checkout@v4
-
       - name: Set up Git
         run: |
           git.config user.name "${{ github.event.sender.login }}"
           git.config user.email "${{ github.event.sender.login}}@users.noreply.github.com"
-
       -name: Create Release Branch
         run: |
           BRANCH_NAME="releases/${{ github.run_number }}"
