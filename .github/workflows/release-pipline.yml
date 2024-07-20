@@ -71,8 +71,13 @@ jobs:
       - name: Get Commit List
         id: commit-list
         run: |
-          latest_tag=$(git describe --tags --abbrev=0 HEAD^)
-          echo "::set-output name=commits::$(git log $latest_tag..HEAD --pretty=format:'- %s')"
+          latest_tag=$(git describe --tags --abbrev=0 HEAD^ || echo "")
+          if [ -z "$latest_tag" ]; then
+            echo "No tags found, using initial commit"
+            echo "::set-output name=commits::$(git log --pretty=format:'- %s' --no-merges)"
+          else
+            echo "::set-output name=commits::$(git log $latest_tag..HEAD --pretty=format:'- %s' --no-merges)"
+          fi
       - name: Create Issue
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
