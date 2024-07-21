@@ -104,5 +104,5 @@ jobs:
 
             **Docker-образ:** ```cr.yandex/${{ secrets.CRY_ID }}/app:${ github.event.inputs.release_version }_fix${{ github.run_number }}```
         run: |
-          ISSUE_NUMBER=$(gh issue list --search "title:\"Релиз ${{ github.event.inputs.release_version }}\"")
+          ISSUE_NUMBER=$(gh issue list --search "title: "Релиз ${{ github.event.inputs.release_version }}"" --json number --jq ".[0].number")
           gh issue comment "$ISSUE_NUMBER"  --body "$BODY"
