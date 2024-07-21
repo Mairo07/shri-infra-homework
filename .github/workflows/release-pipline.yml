@@ -92,7 +92,7 @@ jobs:
             **Docker-образ:** ```cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.run_number }}```
         run: |
           gh issue create \
-            --title "Релиз ${RELEASE_VERSION}" \
+            --title "Релиз ${{ github.run_number }}" \
             --body "$BODY" \
-            --assignee $RELEASE_AUTHOR
+            --assignee "${{ github.event.sender.login }}"
 
