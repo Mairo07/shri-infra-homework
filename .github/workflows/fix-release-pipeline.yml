@@ -81,7 +81,7 @@ jobs:
   #         git push origin $FIX_TAG
 
   create-issue-comment:
-    needs: build-and-push-docker
+    # needs: build-and-push-docker
     runs-on: ubuntu-latest
     steps:
       - name: Get Previous Tag
