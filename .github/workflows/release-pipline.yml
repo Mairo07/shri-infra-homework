@@ -83,7 +83,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           BODY: |
             ## Информация о релизе
-            **Дата:** ${{ github.event.repository.updated_at }}
+            **Дата:** $(date)
             **Автора релиза:** ${{ github.event.sender.login }}
             **Номер версии:** ${{ github.run_number }}
             **Список коммитов:**
