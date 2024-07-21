@@ -1,0 +1,36 @@
+name: Production Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release version'
+        required: true
+        type: string
+jobs:
+  # check-docker-image:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Log in to Yandex Container Registry
+  #       run: echo "${{ secrets.CRY_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
+  #     - name: Check Docker Image in Yandex Container Registry
+  #       run: |
+  #         IMAGE_NAME="cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.event.inputs.release_version }}_latest"
+
+  deploy-to-prod:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Docker Image to VM
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          IMAGE_NAME="cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.event.inputs.release_version }}_latest"
+          ssh -o StrictHostKeyChecking=no -i "$SSH_PRIVATE_KEY" "$SSH_USER@$SSH_HOST" << EOF
+            docker pull $IMAGE_NAME
+            docker stop app || true
+            docker rm app || true
+            docker run -d --name app -p 3000:3000 $IMAGE_NAME
+          EOF

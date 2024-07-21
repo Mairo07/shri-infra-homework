@@ -81,19 +81,15 @@ jobs:
       - name: Create Issue
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          RELEASE_DATE: ${{ github.event.repository.updated_at }}
-          RELEASE_AUTHOR: ${{ github.event.sender.login }}
-          RELEASE_VERSION: ${{ github.run_number }}
-          COMMIT_LIST: ${{ steps.commit-list.outputs.commits }}
-          DOCKER_IMAGE: cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.run_number }}
           BODY: |
             ## Информация о релизе
-            # **Дата:** ${{ github.event.repository.updated_at }}
+            **Дата:** ${{ github.event.repository.updated_at }}
             **Автора релиза:** ${{ github.event.sender.login }}
             **Номер версии:** ${{ github.run_number }}
             **Список коммитов:**
             ${{ steps.commit-list.outputs.commits }}
-            **Docker-образ:** [cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.run_number }}](https://cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.run_number }})
+
+            **Docker-образ:** ```cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.run_number }}```
         run: |
           gh issue create \
             --title "Релиз ${RELEASE_VERSION}" \
