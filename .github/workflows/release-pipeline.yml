@@ -78,6 +78,8 @@ jobs:
           else
             echo "::set-output name=commits::$(git log $latest_tag..HEAD --pretty=format:'- %s' --no-merges)"
           fi
+      - name: Create Label
+        run: gh label create "release-${{ github.run_number }}"
       - name: Create Issue
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -94,5 +96,6 @@ jobs:
           gh issue create \
             --title "Релиз ${{ github.run_number }}" \
             --body "$BODY" \
-            --assignee "${{ github.event.sender.login }}"
+            --assignee "${{ github.event.sender.login }}" \
+            --labels "release-${{ github.run_number }}"
 
