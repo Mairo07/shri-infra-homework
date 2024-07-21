@@ -1,0 +1,107 @@
+name: Fix Release Pipeline
+
+on: 
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Версия релиза'
+        required: true
+        type: string
+
+jobs:
+  checkout-release-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout Release Branch
+        run: |
+          RELEASE_VERSION="${{ github.event.inputs.release_version }}"
+          BRANCH_NAME="releases/${RELEASE_VERSION}"
+          git fetch origin
+          if git rev-parse --verify origin/$BRANCH_NAME; then
+            git checkout $BRANCH_NAME
+          else
+            echo "Release bransh $BRANCH_NAME not found!"
+            exit 1
+          fi
+
+  lint:
+    needs: checkout-release-branch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.checkout-release-branch.outputs.branch }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install 
+      - run: npm run lint
+
+  test:
+    needs: checkout-release-branch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.checkout-release-branch.outputs.branch }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install 
+      - run: npm run test
+
+  build-and-push-docker:
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.checkout-release-branch.outputs.branch }}
+      - name: Log in to Yandex Container Registry
+        run: echo "${{ secrets.CRY_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
+      - name: Build Docker Image
+        run: |
+          RELEASE_VERSION="${{ github.event.inputs.release_version }}"
+          IMAGE_NAME="cr.yandex/${{ secrets.CRY_ID }}/app:${RELEASE_VERSION}_fix${{ github.run_number }}"
+          IMAGE_LATEST="cr.yandex/${{ secrets.CRY_ID }}/app:${RELEASE_VERSION}_latest"
+          docker build -t $IMAGE_NAME -t $IMAGE_LATEST .
+      - name: Push Docker Image to Container Registry Yandex
+        run: |
+          RELEASE_VERSION="${{ github.event.inputs.release_version }}"
+          IMAGE_NAME="cr.yandex/${{ secrets.CRY_ID }}/app:${RELEASE_VERSION}_fix${{ github.run_number }}"
+          IMAGE_LATEST="cr.yandex/${{ secrets.CRY_ID }}/app:${RELEASE_VERSION}_latest"
+          docker push $IMAGE_NAME
+          docker push $IMAGE_LATEST
+      - name: Create Fix Tag
+        run: |
+          RELEASE_VERSION="${{ github.event.inputs.release_version }}"
+          FIX_TAG="${RELEASE_VERSION}_fix${{ github.run_number }}"
+          git tag $FIX_TAG
+          git push origin $FIX_TAG
+
+  create-issue-comment:
+    needs: build-and-push-docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Previous Tag
+        id: prev-tag
+        run: echo "::set-output name=tag::$(git describe --tags --abbrev=0 HEAD^)"
+      - name: Get Commit List
+        id: commit-list
+        run: |
+          PREV_TAG=${{ steps.prev-tag.outputs.tag }}
+          echo "::set-output name=commits::$(git log ${PREV_TAG}..HEAD --pretty=format:'- %s (%an)' --no-merges)"
+      - name: Create GitHub Issue Comment
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          BODY: |
+            ## Фикс релиза
+            **Дата:** ${{ github.event.repository.updated_at }}
+            **Автора релиза:** ${{ github.event.sender.login }}
+            **Список коммитов:**
+            ${{ steps.commit-list.outputs.commits }}
+
+            **Docker-образ:** ```cr.yandex/${{ secrets.CRY_ID }}/app:${RELEASE_VERSION}_fix${{ github.run_number }}```
+        run: |
+          gh issue comment --issue $(gh issue list --label "release" --state "open" --json number --jq ".[0].number") --body "$BODY"

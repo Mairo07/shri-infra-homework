@@ -1,4 +1,4 @@
-name: Production Release
+name: Production Release Pipeline
 
 on:
   workflow_dispatch:
