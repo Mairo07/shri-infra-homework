@@ -102,7 +102,7 @@ jobs:
             **Список коммитов:**
             ${{ steps.commit-list.outputs.commits }}
 
-            **Docker-образ:** ```cr.yandex/${{ secrets.CRY_ID }}/app:${ github.event.inputs.release_version }_fix${{ github.run_number }}```
+            **Docker-образ:** ```cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}```
         run: |
-          ISSUE_NUMBER=$(gh issue list --search "title: "Релиз ${{ github.event.inputs.release_version }}"" --json number --jq ".[0].number")
+          ISSUE_NUMBER=$(gh issue list --json title,number --jq '.[] | select(.title == "Релиз "${{ github.event.inputs.release_version }}""))
           gh issue comment "$ISSUE_NUMBER"  --body "$BODY"
