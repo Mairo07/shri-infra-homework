@@ -28,7 +28,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            IMAGE_NAME="cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.event.inputs.release_version }}_latest"
+            IMAGE_NAME="cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.event.inputs.release_version }}"
             docker pull $IMAGE_NAME
             docker stop app || true
             docker rm app || true
