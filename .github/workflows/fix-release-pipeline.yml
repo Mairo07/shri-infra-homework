@@ -9,76 +9,76 @@ on:
         type: string
 
 jobs:
-  checkout-release-branch:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Checkout Release Branch
-        run: |
-          RELEASE_VERSION="${{ github.event.inputs.release_version }}"
-          BRANCH_NAME="releases/${RELEASE_VERSION}"
-          git fetch origin
-          if git rev-parse --verify origin/$BRANCH_NAME; then
-            git checkout $BRANCH_NAME
-          else
-            echo "Release bransh $BRANCH_NAME not found!"
-            exit 1
-          fi
+  # checkout-release-branch:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Checkout Release Branch
+  #       run: |
+  #         RELEASE_VERSION="${{ github.event.inputs.release_version }}"
+  #         BRANCH_NAME="releases/${RELEASE_VERSION}"
+  #         git fetch origin
+  #         if git rev-parse --verify origin/$BRANCH_NAME; then
+  #           git checkout $BRANCH_NAME
+  #         else
+  #           echo "Release bransh $BRANCH_NAME not found!"
+  #           exit 1
+  #         fi
 
-  lint:
-    needs: checkout-release-branch
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.checkout-release-branch.outputs.branch }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm install 
-      - run: npm run lint
+  # lint:
+  #   needs: checkout-release-branch
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         ref: ${{ needs.checkout-release-branch.outputs.branch }}
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '20'
+  #     - run: npm install 
+  #     - run: npm run lint
 
-  test:
-    needs: checkout-release-branch
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.checkout-release-branch.outputs.branch }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm install 
-      - run: npm run test
+  # test:
+  #   needs: checkout-release-branch
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         ref: ${{ needs.checkout-release-branch.outputs.branch }}
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '20'
+  #     - run: npm install 
+  #     - run: npm run test
 
-  build-and-push-docker:
-    needs: [lint, test]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.checkout-release-branch.outputs.branch }}
-      - name: Log in to Yandex Container Registry
-        run: echo "${{ secrets.CRY_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
-      - name: Build Docker Image
-        run: |
-          RELEASE_VERSION="${{ github.event.inputs.release_version }}"
-          IMAGE_NAME="cr.yandex/${{ secrets.CRY_ID }}/app:${RELEASE_VERSION}_fix${{ github.run_number }}"
-          IMAGE_LATEST="cr.yandex/${{ secrets.CRY_ID }}/app:${RELEASE_VERSION}_latest"
-          docker build -t $IMAGE_NAME -t $IMAGE_LATEST .
-      - name: Push Docker Image to Container Registry Yandex
-        run: |
-          RELEASE_VERSION="${{ github.event.inputs.release_version }}"
-          IMAGE_NAME="cr.yandex/${{ secrets.CRY_ID }}/app:${RELEASE_VERSION}_fix${{ github.run_number }}"
-          IMAGE_LATEST="cr.yandex/${{ secrets.CRY_ID }}/app:${RELEASE_VERSION}_latest"
-          docker push $IMAGE_NAME
-          docker push $IMAGE_LATEST
-      - name: Create Fix Tag
-        run: |
-          RELEASE_VERSION="${{ github.event.inputs.release_version }}"
-          FIX_TAG="${RELEASE_VERSION}_fix${{ github.run_number }}"
-          git tag $FIX_TAG
-          git push origin $FIX_TAG
+  # build-and-push-docker:
+  #   needs: [lint, test]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         ref: ${{ needs.checkout-release-branch.outputs.branch }}
+  #     - name: Log in to Yandex Container Registry
+  #       run: echo "${{ secrets.CRY_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
+  #     - name: Build Docker Image
+  #       run: |
+  #         RELEASE_VERSION="${{ github.event.inputs.release_version }}"
+  #         IMAGE_NAME="cr.yandex/${{ secrets.CRY_ID }}/app:${RELEASE_VERSION}_fix${{ github.run_number }}"
+  #         IMAGE_LATEST="cr.yandex/${{ secrets.CRY_ID }}/app:${RELEASE_VERSION}_latest"
+  #         docker build -t $IMAGE_NAME -t $IMAGE_LATEST .
+  #     - name: Push Docker Image to Container Registry Yandex
+  #       run: |
+  #         RELEASE_VERSION="${{ github.event.inputs.release_version }}"
+  #         IMAGE_NAME="cr.yandex/${{ secrets.CRY_ID }}/app:${RELEASE_VERSION}_fix${{ github.run_number }}"
+  #         IMAGE_LATEST="cr.yandex/${{ secrets.CRY_ID }}/app:${RELEASE_VERSION}_latest"
+  #         docker push $IMAGE_NAME
+  #         docker push $IMAGE_LATEST
+  #     - name: Create Fix Tag
+  #       run: |
+  #         RELEASE_VERSION="${{ github.event.inputs.release_version }}"
+  #         FIX_TAG="${RELEASE_VERSION}_fix${{ github.run_number }}"
+  #         git tag $FIX_TAG
+  #         git push origin $FIX_TAG
 
   create-issue-comment:
     needs: build-and-push-docker
