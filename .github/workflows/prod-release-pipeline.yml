@@ -28,6 +28,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            echo "${{ secrets.CRY_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
             IMAGE_NAME="cr.yandex/${{ secrets.CRY_ID }}/app:${{ github.event.inputs.release_version }}_latest"
             docker pull $IMAGE_NAME
             docker stop app || true
